@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ResQRelief OS - Disaster Intelligence Command</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-gradient: linear-gradient(135deg, #1d4ed8 0%, #06b6d4 100%);
+      --bg: #0b1329;
+      --surface: #111e38;
+      --surface-card: #182849;
+      --surface-border: #233863;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --accent-amber: #f59e0b;
+      --glow-blue: rgba(37, 99, 235, 0.35);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background-color: var(--bg); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* AUTH OVERLAY (NO PASSWORDS) */
+    #auth-overlay {
+      position: fixed; inset: 0; background: rgba(5, 10, 25, 0.93); backdrop-filter: blur(12px);
+      display: flex; align-items: center; justify-content: center; z-index: 99999;
+    }
+    .auth-card {
+      background: var(--surface); border-radius: 20px; padding: 40px; width: 450px;
+      border: 1px solid var(--surface-border); box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 40px var(--glow-blue);
+    }
+    .auth-card h2 { font-size: 26px; font-weight: 800; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .auth-card p { font-size: 13px; color: var(--text-muted); margin: 6px 0 22px 0; }
+
+    /* HEADER */
+    header {
+      background: rgba(17, 30, 56, 0.85); backdrop-filter: blur(10px); border-bottom: 1px solid var(--surface-border);
+      padding: 16px 36px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000;
+    }
+    .brand-box { display: flex; align-items: center; gap: 12px; }
+    .brand-icon {
+      width: 36px; height: 36px; border-radius: 10px; background: var(--primary-gradient);
+      display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 0 15px var(--glow-blue);
+    }
+    .brand-title { font-size: 19px; font-weight: 800; }
+    .nav-actions { display: flex; align-items: center; gap: 14px; font-size: 13px; }
+    .badge-role {
+      background: rgba(6, 182, 212, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 5px 12px; border-radius: 30px; font-weight: 700; font-size: 11px; text-transform: uppercase;
+    }
+
+    /* METRIC CARDS */
+    .container { max-width: 1440px; margin: 24px auto; padding: 0 24px; width: 100%; flex: 1; }
+    .metrics-ribbon { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 26px; }
+    .stat-card {
+      background: var(--surface-card); border-radius: var(--radius); border: 1px solid var(--surface-border);
+      padding: 22px; position: relative; overflow: hidden;
+    }
+    .stat-card::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--primary-gradient);
+    }
+    .stat-card span { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
+    .stat-card h3 { font-size: 26px; font-weight: 800; margin-top: 6px; }
+
+    /* LAYOUT GRIDS */
+    .view-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 24px; }
+    .panel {
+      background: var(--surface); border-radius: var(--radius); border: 1px solid var(--surface-border);
+      padding: 26px; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+    .panel-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .panel-head h3 { font-size: 17px; font-weight: 700; }
+
+    /* FORMS & INPUTS */
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: 12px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px; }
+    input, select, textarea {
+      width: 100%; padding: 11px 15px; border-radius: 8px; border: 1px solid var(--surface-border);
+      background: #0d172e; color: #fff; font-size: 13px; outline: none; transition: 0.2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+    }
+
+    /* BUTTONS */
+    .btn {
+      padding: 11px 18px; border-radius: 9px; font-size: 13px; font-weight: 700;
+      border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;
+    }
+    .btn-primary { background: var(--primary-gradient); color: #fff; width: 100%; box-shadow: 0 4px 15px var(--glow-blue); }
+    .btn-primary:hover { opacity: 0.92; }
+    .btn-secondary { background: #1e293b; color: #f8fafc; border: 1px solid var(--surface-border); }
+    .btn-success { background: #059669; color: #fff; padding: 6px 12px; font-size: 11px; border-radius: 6px; }
+    .btn-danger { background: #dc2626; color: #fff; padding: 6px 12px; font-size: 11px; border-radius: 6px; }
+
+    /* TABLES */
+    .table-container { overflow-x: auto; max-height: 440px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+    th { background: #0f1a33; color: var(--text-muted); font-weight: 600; padding: 12px 14px; position: sticky; top: 0; }
+    td { padding: 13px 14px; border-bottom: 1px solid var(--surface-border); }
+
+    /* STATUS PILLS */
+    .pill { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-block; }
+    .pill-approved { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3); }
+    .pill-pending { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
+    .pill-rejected { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.3); }
+
+    /* SATELLITE RADAR MAP ENGINE */
+    .radar-map-wrapper {
+      position: relative; width: 100%; height: 380px; border-radius: var(--radius);
+      background: radial-gradient(circle at center, #132448 0%, #080f20 100%);
+      border: 1px solid var(--surface-border); overflow: hidden;
+    }
+    .map-grid-bg {
+      position: absolute; inset: 0;
+      background-image: linear-gradient(rgba(56, 189, 248, 0.08) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(56, 189, 248, 0.08) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+    .radar-sweep {
+      position: absolute; width: 500px; height: 500px; top: -60px; left: -60px;
+      border-radius: 50%; border: 1px solid rgba(56, 189, 248, 0.15);
+      animation: rotateSweep 12s linear infinite; pointer-events: none;
+    }
+    @keyframes rotateSweep { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .radar-sweep::after {
+      content: ""; position: absolute; top: 0; left: 0; width: 50%; height: 50%;
+      background: conic-gradient(from 0deg at 100% 100%, rgba(6, 182, 212, 0.2) 0deg, transparent 60deg);
+    }
+    
+    .map-pin {
+      position: absolute; transform: translate(-50%, -50%); cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; z-index: 20;
+    }
+    .pin-pulse {
+      width: 16px; height: 16px; border-radius: 50%; background: #38bdf8;
+      box-shadow: 0 0 0 rgba(56, 189, 248, 0.6); animation: beacon 2s infinite;
+    }
+    .pin-pulse.critical { background: #ef4444; animation: beaconCrit 1.5s infinite; }
+    .pin-label {
+      background: rgba(13, 23, 46, 0.9); border: 1px solid var(--surface-border);
+      padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; margin-top: 5px; white-space: nowrap;
+    }
+    @keyframes beacon { 0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); } 70% { box-shadow: 0 0 0 16px transparent; } }
+    @keyframes beaconCrit { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.8); } 70% { box-shadow: 0 0 0 20px transparent; } }
+
+    .calculator-preview {
+      background: rgba(6, 182, 212, 0.08); border: 1px dashed rgba(56, 189, 248, 0.4);
+      border-radius: 10px; padding: 16px; margin: 16px 0;
+    }
+    .calc-val { font-size: 24px; font-weight: 800; color: #38bdf8; display: block; margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN MODAL (NO PASSWORDS REQUIRED) -->
+  <div id="auth-overlay">
+    <div class="auth-card">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+        <span style="font-size: 24px;">🛡️</span>
+        <h2>ResQRelief Portal</h2>
+      </div>
+      <p>Enter your identity & choose role to enter workspace</p>
+      
+      <form id="auth-form">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="in-name" placeholder="Type your name..." required />
+        </div>
+        <div class="form-group">
+          <label>CNIC / National Identity</label>
+          <input type="text" id="in-cnic" placeholder="e.g. 45504-1234567-1" required />
+        </div>
+        <div class="form-group">
+          <label>Select Operational Role</label>
+          <select id="in-role">
+            <option value="worker">Field Relief Volunteer / Ground Officer</option>
+            <option value="coordinator">NGO Director / Head Coordinator (Executive)</option>
+            <option value="victim">Disaster Affected Citizen (Public Claim)</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="margin-top: 10px;">Enter Dashboard</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- NAVIGATION BAR -->
+  <header>
+    <div class="brand-box">
+      <div class="brand-icon">🌊</div>
+      <div>
+        <div class="brand-title">ResQRelief OS</div>
+        <div style="font-size: 11px; color: var(--text-muted);">Sindh Humanitarian Grid • Live System</div>
+      </div>
+    </div>
+    <div class="nav-actions">
+      <span>User: <strong id="out-name">Operator</strong></span>
+      <span class="badge-role" id="out-role">ACTIVE</span>
+      <button class="btn btn-secondary btn-sm" onclick="exportAuditData()">📥 Audit CSV</button>
+      <button class="btn btn-secondary btn-sm" onclick="location.reload()">Switch Role</button>
+    </div>
+  </header>
+
+  <!-- BODY CONTENT -->
+  <div class="container">
+    
+    <!-- METRICS STRIP -->
+    <div class="metrics-ribbon">
+      <div class="stat-card">
+        <span>Global Reserve Pool</span>
+        <h3 id="stat-total-pool" style="color: #38bdf8;">PKR 14,500,000</h3>
+      </div>
+      <div class="stat-card">
+        <span>Aid Disbursed</span>
+        <h3 id="stat-disbursed-aid" style="color: #34d399;">PKR 4,120,000</h3>
+      </div>
+      <div class="stat-card">
+        <span>Pending Authorizations</span>
+        <h3 id="stat-pending-val" style="color: #fbbf24;">PKR 315,000</h3>
+      </div>
+      <div class="stat-card">
+        <span>Families Protected</span>
+        <h3 id="stat-families-count">142 Enrolled</h3>
+      </div>
+    </div>
+
+    <!-- DYNAMIC ROLE WORKSPACE -->
+    <div id="dynamic-workspace"></div>
+
+  </div>
+
+  <script>
+    const DATA_STORE = {
+      user: { name: "", role: "", cnic: "" },
+      financials: { total: 14500000, disbursed: 4120000 },
+      nodes: [
+        { id: 1, name: "Khairpur (Kingri)", x: 62, y: 35, status: "Critical", people: "4,200", reliefStock: "Low" },
+        { id: 2, name: "Dadu (Mehar)", x: 38, y: 68, status: "Critical", people: "6,800", reliefStock: "Depleted" },
+        { id: 3, name: "Larkana (Bakrani)", x: 45, y: 45, status: "Moderate", people: "3,100", reliefStock: "Stable" },
+        { id: 4, name: "Sukkur (Rohri Buffer)", x: 68, y: 28, status: "Stable", people: "1,500", reliefStock: "Supplied" }
+      ],
+      claims: [
+        { id: 401, name: "Barkat Ali", cnic: "45504-1290331-5", loc: "Village Pir jo goth", fam: 5, grant: 45000, status: "Pending", damage: "complete" },
+        { id: 402, name: "Ali Raza", cnic: "45501-1122334-1", loc: "Khairpur (Kingri)", fam: 7, grant: 64000, status: "Approved", damage: "complete" },
+        { id: 403, name: "Sakina Khatoon", cnic: "43201-9988776-5", loc: "Dadu (Mehar)", fam: 4, grant: 38000, status: "Approved", damage: "partial" },
+        { id: 404, name: "Gul Hassan", cnic: "45201-4433221-3", loc: "Larkana (Bakrani)", fam: 6, grant: 27000, status: "Rejected", damage: "ration" }
+      ]
+    };
+
+    // INSTANT LOGIN — DIRECT PASS-THROUGH
+    document.getElementById('auth-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('in-name').value;
+      const cnic = document.getElementById('in-cnic').value;
+      const role = document.getElementById('in-role').value;
+
+      DATA_STORE.user.name = name;
+      DATA_STORE.user.cnic = cnic;
+      DATA_STORE.user.role = role;
+
+      document.getElementById('out-name').innerText = name;
+      document.getElementById('out-role').innerText = role.toUpperCase();
+      document.getElementById('auth-overlay').style.display = 'none';
+
+      renderAppView();
+    });
+
+    function renderAppView() {
+      const target = document.getElementById('dynamic-workspace');
+      if (DATA_STORE.user.role === 'worker') renderWorkerView(target);
+      else if (DATA_STORE.user.role === 'victim') renderVictimView(target);
+      else renderCoordinatorView(target);
+      updateRibbonMetrics();
+    }
+
+    // WORKER WORKBENCH
+    function renderWorkerView(el) {
+      el.innerHTML = `
+        <div class="view-grid">
+          <div>
+            <div class="panel">
+              <div class="panel-head">
+                <h3>📋 Field Triage & Rapid Dispatch Workbench</h3>
+                <span class="pill pill-pending">${DATA_STORE.claims.filter(c => c.status === 'Pending').length} Pending Review</span>
+              </div>
+              <div class="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Citizen</th>
+                      <th>Location</th>
+                      <th>Grant</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${DATA_STORE.claims.map(c => `
+                      <tr>
+                        <td><strong>${c.name}</strong><br /><small style="color:var(--text-muted);">${c.fam} members</small></td>
+                        <td>${c.loc}</td>
+                        <td><strong style="color:#38bdf8;">PKR ${c.grant.toLocaleString()}</strong></td>
+                        <td><span class="pill pill-${c.status.toLowerCase()}">${c.status}</span></td>
+                        <td>
+                          ${c.status === 'Pending' ? `
+                            <button class="btn btn-success" onclick="resolveClaim(${c.id}, 'Approved')">Approve</button>
+                            <button class="btn btn-danger" onclick="resolveClaim(${c.id}, 'Rejected')">Reject</button>
+                          ` : `<small style="color:var(--text-muted);">Completed</small>`}
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-head">
+                <h3>⚡ Direct Quick SOS Ingestion</h3>
+              </div>
+              <form id="worker-quick-sos" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <div>
+                  <label>Family Head Name</label>
+                  <input type="text" id="sos-head" placeholder="e.g. Village elder" required />
+                </div>
+                <div>
+                  <label>Village / Sector</label>
+                  <input type="text" id="sos-loc" placeholder="e.g. Mehar Camp 4" required />
+                </div>
+                <div>
+                  <label>Persons Stranded</label>
+                  <input type="number" id="sos-pax" value="5" min="1" max="50" required />
+                </div>
+                <div>
+                  <label>Immediate Requirement</label>
+                  <select id="sos-type">
+                    <option value="complete">Critical Evacuation (Boat)</option>
+                    <option value="ration">Dry Rations & Medical Aid</option>
+                  </select>
+                </div>
+                <div style="grid-column: span 2;">
+                  <button type="submit" class="btn btn-primary">Dispatch Urgent Triage Request</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <div>
+            <div class="panel">
+              <div class="panel-head">
+                <h3>🛰️ Satellite Situational Radar</h3>
+                <span style="font-size: 11px; color:#38bdf8;">● Live Sindh Corridors</span>
+              </div>
+              ${renderRadarMapHTML()}
+            </div>
+
+            <div class="panel">
+              <div class="panel-head">
+                <h3>Ground Protocols Checklist</h3>
+              </div>
+              <ul style="font-size: 13px; line-height: 1.8; color: var(--text-muted); padding-left: 20px;">
+                <li>Verify NADRA CNIC duplicates before direct JazzCash/Raast release.</li>
+                <li>Priority 1: Complete shelter damage with children or elderly.</li>
+                <li>Flag high water level clusters directly to rescue boats.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('worker-quick-sos').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const pax = parseInt(document.getElementById('sos-pax').value);
+        const newClaim = {
+          id: Date.now(),
+          name: document.getElementById('sos-head').value,
+          cnic: "45000-0000000-0",
+          loc: document.getElementById('sos-loc').value,
+          fam: pax,
+          grant: 25000 + (pax * 3000),
+          status: "Pending",
+          damage: document.getElementById('sos-type').value
+        };
+        DATA_STORE.claims.unshift(newClaim);
+        renderAppView();
+      });
+    }
+
+    // VICTIM APPLICATION WORKSPACE
+    function renderVictimView(el) {
+      el.innerHTML = `
+        <div class="view-grid">
+          <div class="panel">
+            <div class="panel-head">
+              <h3>📝 Emergency Flood Relief Application</h3>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+              Direct grant disbursement under Sindh Disaster Relief Ordinance. Complete all details truthfully.
+            </p>
+            <form id="citizen-form">
+              <div class="form-group">
+                <label>Applicant Legal Name</label>
+                <input type="text" id="c-name" value="${DATA_STORE.user.name}" required />
+              </div>
+              <div class="form-group">
+                <label>CNIC Number</label>
+                <input type="text" id="c-cnic" value="${DATA_STORE.user.cnic}" required />
+              </div>
+              <div class="form-group">
+                <label>Flood-Hit Sector</label>
+                <select id="c-loc">
+                  <option value="Khairpur (Kingri)">Khairpur - Kingri / Gambat Buffer</option>
+                  <option value="Dadu (Mehar)">Dadu - Mehar Embankment Area</option>
+                  <option value="Larkana (Bakrani)">Larkana - Bakrani Cluster</option>
+                  <option value="Sukkur (Rohri)">Sukkur - Rohri Flood Line</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Family Member Count</label>
+                <input type="number" id="c-fam" min="1" max="25" value="6" oninput="recalcEntitlement()" required />
+              </div>
+              <div class="form-group">
+                <label>Damage Severity Index</label>
+                <select id="c-damage" onchange="recalcEntitlement()">
+                  <option value="complete">Tier 1: Complete Structure Collapse (Urgent PKR 50k+)</option>
+                  <option value="partial">Tier 2: Inundation & Cattle Loss (PKR 30k+)</option>
+                  <option value="ration">Tier 3: Displaced / Food Scarcity (PKR 20k+)</option>
+                </select>
+              </div>
+
+              <div class="calculator-preview">
+                <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Estimated Allocation:</span>
+                <span class="calc-val" id="c-grant-preview">PKR 52,000</span>
+                <small style="color: #94a3b8; font-size: 11px;">Calculated: Base + (PKR 2,000 × Family Member Allowance)</small>
+              </div>
+
+              <button type="submit" id="btn-submit-citizen" class="btn btn-primary">Submit for 60s Fast-Track Verification</button>
+            </form>
+          </div>
+
+          <div>
+            <div class="panel">
+              <div class="panel-head">
+                <h3>🛰️ Regional Situation Awareness Radar</h3>
+              </div>
+              ${renderRadarMapHTML()}
+            </div>
+
+            <div class="panel">
+              <div class="panel-head">
+                <h3>⏳ Autonomous Verification Feed</h3>
+              </div>
+              <div id="countdown-status" style="font-size: 13px; color: var(--text-muted); line-height: 1.6;">
+                Submit application on left to initialize autonomous satellite risk and NADRA integrity verification.
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      recalcEntitlement();
+
+      document.getElementById('citizen-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        start60sVerification();
+      });
+    }
+
+    // DIRECTOR / COORDINATOR WORKSPACE
+    function renderCoordinatorView(el) {
+      el.innerHTML = `
+        <div class="view-grid">
+          <div>
+            <div class="panel">
+              <div class="panel-head">
+                <h3>📑 Unified Relief Fund Master Ledger</h3>
+                <button class="btn btn-secondary btn-sm" onclick="exportAuditData()">Export CSV</button>
+              </div>
+              <div class="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Ref</th>
+                      <th>Beneficiary</th>
+                      <th>Location</th>
+                      <th>Grant</th>
+                      <th>Status</th>
+                      <th>Controls</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${DATA_STORE.claims.map(c => `
+                      <tr>
+                        <td>#${c.id}</td>
+                        <td><strong>${c.name}</strong><br /><small style="color:var(--text-muted);">${c.cnic}</small></td>
+                        <td>${c.loc}</td>
+                        <td><strong>PKR ${c.grant.toLocaleString()}</strong></td>
+                        <td><span class="pill pill-${c.status.toLowerCase()}">${c.status}</span></td>
+                        <td>
+                          <button class="btn btn-secondary btn-sm" onclick="toggleStatus(${c.id})">Toggle</button>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-head">
+                <h3>🏦 Institutional Grants Pipeline</h3>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Organization</th>
+                    <th>Grant</th>
+                    <th>Channel</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>UN Disaster Relief Fund</strong></td>
+                    <td style="color:#34d399; font-weight:700;">+PKR 6,000,000</td>
+                    <td>Direct Wire</td>
+                    <td>2026-10-01</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Sindh Medical Relief</strong></td>
+                    <td style="color:#34d399; font-weight:700;">+PKR 2,500,000</td>
+                    <td>State Bank</td>
+                    <td>2026-09-29</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div>
+            <div class="panel">
+              <div class="panel-head">
+                <h3>🛰️ Crisis Area Sat-Coverage</h3>
+              </div>
+              ${renderRadarMapHTML()}
+            </div>
+
+            <div class="panel">
+              <div class="panel-head">
+                <h3>Executive Runway Analysis</h3>
+              </div>
+              <div style="font-size: 13px; line-height: 1.8; color: var(--text-muted);">
+                <p>Liquid Capital Remaining: <strong style="color:#fff;">PKR ${(DATA_STORE.financials.total - DATA_STORE.financials.disbursed).toLocaleString()}</strong></p>
+                <p>Estimated Coverage Runway: <strong style="color:#fff;">34 Operational Days</strong></p>
+                <p>High Priority Flood Clusters: <strong style="color:#ef4444;">Dadu, Khairpur</strong></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // SAT RADAR
+    function renderRadarMapHTML() {
+      return `
+        <div class="radar-map-wrapper">
+          <div class="map-grid-bg"></div>
+          <div class="radar-sweep"></div>
+
+          ${DATA_STORE.nodes.map(n => `
+            <div class="map-pin" style="top: ${n.y}\%; left:${n.x}%;" onclick="alert('Sector: ${n.name}\\nStatus:${n.status}\\nAffected Population: ${n.people}\\nRelief Stock:${n.reliefStock}')">
+              <div class="pin-pulse ${n.status === 'Critical' ? 'critical' : ''}"></div>
+              <div class="pin-label">${n.name}</div>
+            </div>
+          `).join('')}
+
+          <div style="position: absolute; bottom: 12px; left: 16px; font-size: 11px; color: var(--text-muted); background: rgba(10,18,36,0.8); padding: 4px 8px; border-radius: 4px;">
+            ⚠️ Satellite Telemetry: Live (Sindh Emergency Grid)
+          </div>
+        </div>
+      `;
+    }
+
+    function recalcEntitlement() {
+      const fam = parseInt(document.getElementById('c-fam')?.value) || 1;
+      const damage = document.getElementById('c-damage')?.value || 'complete';
+      
+      let base = 25000;
+      if (damage === 'complete') base = 40000;
+      else if (damage === 'partial') base = 26000;
+      else base = 15000;
+
+      const total = base + (fam * 2000);
+      const display = document.getElementById('c-grant-preview');
+      if (display) display.innerText = `PKR ${total.toLocaleString()}`;
+      return total;
+    }
+
+    function start60sVerification() {
+      const name = document.getElementById('c-name').value;
+      const cnic = document.getElementById('c-cnic').value;
+      const loc = document.getElementById('c-loc').value;
+      const fam = parseInt(document.getElementById('c-fam').value);
+      const grant = recalcEntitlement();
+
+      const newId = Math.floor(100 + Math.random() * 900);
+      const newEntry = {
+        id: newId,
+        name, cnic, loc, fam, grant,
+        status: "Pending",
+        damage: document.getElementById('c-damage').value
+      };
+
+      DATA_STORE.claims.unshift(newEntry);
+      updateRibbonMetrics();
+
+      const statusBox = document.getElementById('countdown-status');
+      const submitBtn = document.getElementById('btn-submit-citizen');
+      submitBtn.disabled = true;
+
+      let remaining = 60;
+      statusBox.innerHTML = `
+        <div style="background: rgba(37,99,235,0.1); border: 1px solid rgba(56,189,248,0.3); padding: 16px; border-radius: 8px;">
+          <h4 style="color:#38bdf8; margin-bottom: 6px;">⏱️ Multi-Spectrum Verification Active</h4>
+          <p>Running NADRA identity deduplication & satellite telemetry check for <strong>${loc}</strong>...</p>
+          <div id="timer-number" style="font-size: 26px; font-weight: 800; color: #38bdf8; margin: 10px 0;">60s Remaining</div>
+          <small style="color:var(--text-muted);">Application Voucher Ref: #${newId}</small>
+        </div>
+      `;
+
+      const countdown = setInterval(() => {
+        remaining -= 10;
+        const timerEl = document.getElementById('timer-number');
+        if (timerEl) timerEl.innerText = `${remaining}s Remaining`;
+
+        if (remaining <= 0) {
+          clearInterval(countdown);
+          newEntry.status = "Approved";
+          updateRibbonMetrics();
+          statusBox.innerHTML = `
+            <div style="background: rgba(16,185,129,0.12); border: 1px solid rgba(52,211,153,0.3); padding: 16px; border-radius: 8px;">
+              <h4 style="color:#34d399; margin-bottom: 4px;">✅ Grant Authorized & Cleared</h4>
+              <p>Your emergency relief grant of <strong>PKR ${grant.toLocaleString()}</strong> has been dispatched via Raast Instant Settlement.</p>
+              <div class="pill pill-approved" style="margin-top: 8px;">Voucher Authenticated: #${newId}</div>
+            </div>
+          `;
+          submitBtn.disabled = false;
+        }
+      }, 10000);
+    }
+
+    function resolveClaim(id, state) {
+      const item = DATA_STORE.claims.find(c => c.id === id);
+      if (item) {
+        item.status = state;
+        updateRibbonMetrics();
+        renderAppView();
+      }
+    }
+
+    function toggleStatus(id) {
+      const item = DATA_STORE.claims.find(c => c.id === id);
+      if (item) {
+        item.status = item.status === 'Approved' ? 'Pending' : 'Approved';
+        updateRibbonMetrics();
+        renderAppView();
+      }
+    }
+
+    function updateRibbonMetrics() {
+      const approved = DATA_STORE.claims.filter(c => c.status === 'Approved');
+      const totalDisbursed = approved.reduce((sum, c) => sum + c.grant, 0);
+      const pendingVal = DATA_STORE.claims.filter(c => c.status === 'Pending').reduce((sum, c) => sum + c.grant, 0);
+
+      document.getElementById('stat-disbursed-aid').innerText = `PKR ${(DATA_STORE.financials.disbursed + totalDisbursed).toLocaleString()}`;
+      document.getElementById('stat-pending-val').innerText = `PKR ${pendingVal.toLocaleString()}`;
+      document.getElementById('stat-families-count').innerText = `${142 + approved.length} Enrolled`;
+    }
+
+    function exportAuditData() {
+      let csv = "ID,Beneficiary_Name,CNIC,Location,Family_Members,Grant_PKR,Status\n";
+      DATA_STORE.claims.forEach(c => {
+        csv += `${c.id},"${c.name}","${c.cnic}","${c.loc}",${c.fam},${c.grant},"${c.status}"\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `ResQRelief_Audit_Log_${Date.now()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  </script>
+</body>
+</html>
